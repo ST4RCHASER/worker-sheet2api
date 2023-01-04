@@ -10,7 +10,6 @@ export default {
 		const sheetId = searchParams.get('sheet') || '0'
 		const workbookId = sheetUrl?.split('/')[5] || sheetUrl
 		if (!workbookId) return new Response('No workbook found\nhttps://github.com/ST4RCHASER/worker-sheet2api')
-		console.log('raw', getRawHtmlUrl(workbookId, sheetId));
 		const text = await fetch(getRawHtmlUrl(workbookId, sheetId)).then(async (res) => await res.text())
 		if (!text) return new Response('No response error')
 		if (text.includes('https://accounts.google.com/v3/signin')) return new Response('This workbook is not public')
