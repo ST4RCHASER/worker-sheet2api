@@ -239,7 +239,7 @@ export class Tabletojson {
             shiftCount++
         }
         shiftCount = options.shift || shiftCount //Override
-        tosend = this.shiftArray(tosend, options.shift)
+        tosend = this.shiftArray(tosend, shiftCount)
         return tosend;
     }
 }
