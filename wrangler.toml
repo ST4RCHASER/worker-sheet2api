@@ -1,0 +1,4 @@
+name = "worker-sheet2api"
+main = "src/index.ts"
+compatibility_date = "2023-01-04"
+node_compat = true
