@@ -1,4 +1,4 @@
-import { getRawHtmlUrl, queryStringToObject, tableToJSON } from "./libs/parser";
+import { getHtmlUrl, getRawHtmlUrl, queryStringToObject, tableToJSON } from "./libs/parser";
 
 export default {
 	async fetch(

@@ -1,4 +1,5 @@
 import * as cheerio from 'cheerio';
+import { children } from 'cheerio/lib/api/traversing';
 
 //This class form https://github.com/maugenst/tabletojson
 
@@ -16,11 +17,27 @@ export type TableToJsonOptions = {
     headings?: string[] | null, // {Array} Array of Strings to be used as headings [default=null]
     containsClasses?: string[] | null, // {Array} Array of classes to find a specific table [default=null]
     limitrows?: number | null, // {Integer} Integer that limits the result of all rows to a given amount of data [default=null]
+    shift: 0
 };
 
 export type CallbackFunction = (conversionResult: any) => any
 
 export class Tabletojson {
+    static shiftArray(theArray: any[], times: number) {
+        // roll over when longer than length
+        times = times % theArray.length;
+        var newArray = theArray.slice(times);
+        newArray = newArray.concat(theArray.slice(0, times));
+        return newArray;
+    }
+    static findRowWithNotEmpty($: cheerio.CheerioAPI, TRChildrens: cheerio.Cheerio<cheerio.Element>, offset = 0): number {
+        if (!TRChildrens.children()[offset] || offset >= $(TRChildrens).children().length) return offset
+        for (const row of TRChildrens[offset].children) {
+            if (!row) return offset
+            if ($(row).html()) return offset
+        }
+        return this.findRowWithNotEmpty($, TRChildrens, ++offset)
+    }
     static convert(
         html: string,
         options: TableToJsonOptions = {
@@ -37,6 +54,7 @@ export class Tabletojson {
             containsClasses: null,
             id: null,
             limitrows: null,
+            shift: 0
         }
     ): any[] {
         options = Object.assign(
@@ -70,7 +88,6 @@ export class Tabletojson {
         let suffix;
 
         const $ = cheerio.load(html);
-
         let additionalSelectors = options.containsClasses ? `.${options.containsClasses.join('.')}` : '';
         additionalSelectors = options.id ? `${additionalSelectors}#${options.id}` : '';
 
@@ -82,15 +99,16 @@ export class Tabletojson {
             // @todo Try to support badly formated tables.
             const columnHeadings: string[] = [];
 
-            let trs: cheerio.Cheerio = $(table).find('tr');
+            let trs: cheerio.Cheerio<cheerio.Element> = $(table).find('tr');
+
 
             if (options.useFirstRowForHeadings) {
-                trs = $(trs[0]);
+                trs = $(trs[this.findRowWithNotEmpty($, trs)]);
             }
             let headingsCounter: number = 0;
             // Use headings for objects key evaluation
             trs.each((_index: number, row: cheerio.Element) => {
-                const cells: cheerio.Cheerio = options.useFirstRowForHeadings
+                const cells: cheerio.Cheerio<cheerio.Element> = options.useFirstRowForHeadings
                     ? $(row).find('td, th')
                     : $(row).find('th');
                 cells.each((j: number, cell: cheerio.Element) => {
@@ -101,7 +119,7 @@ export class Tabletojson {
                     if (options.headings) {
                         value = options.headings[headingsCounter++];
                     } else {
-                        const cheerioCell: cheerio.Cheerio = $(cell);
+                        const cheerioCell: cheerio.Cheerio<cheerio.Element> = $(cell);
                         const cheerioCellText: string = cheerioCell.text();
                         const cheerioCellHtml: string | null = cheerioCell.html();
 
@@ -149,7 +167,7 @@ export class Tabletojson {
                     });
                     const nextrowspans: any[] = [...rowspans];
 
-                    const cells: cheerio.Cheerio = options.useFirstRowForHeadings
+                    const cells: cheerio.Cheerio<cheerio.Element> = options.useFirstRowForHeadings
                         ? $(row).find('td, th')
                         : $(row).find('td');
                     cells.each((j: number, cell: cheerio.Element) => {
@@ -176,7 +194,7 @@ export class Tabletojson {
                         if (options.onlyColumns && !options.onlyColumns.includes(j)) return;
                         if (options.ignoreColumns && !options.onlyColumns && options.ignoreColumns.includes(j)) return;
 
-                        const cheerioCell: cheerio.Cheerio = $(cell);
+                        const cheerioCell: cheerio.Cheerio<cheerio.Element> = $(cell);
                         const cheerioCellText: string = cheerioCell.text();
                         const cheerioCellHtml: string | null = cheerioCell.html();
                         const cheerioCellRowspan: string | undefined = cheerioCell.attr('rowspan');
@@ -216,9 +234,10 @@ export class Tabletojson {
             jsonResponse.push(tableAsJson);
         });
         let tosend = Array.isArray(jsonResponse[0]) ? jsonResponse[0] : jsonResponse
-        if(options.useFirstRowForHeadings) {
-            tosend.shift()
+        if (options.useFirstRowForHeadings) {
+            tosend = this.shiftArray(tosend, 1)
         }
+        tosend = this.shiftArray(tosend, options.shift)
         return tosend;
     }
 }
