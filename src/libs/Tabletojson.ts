@@ -234,9 +234,11 @@ export class Tabletojson {
             jsonResponse.push(tableAsJson);
         });
         let tosend = Array.isArray(jsonResponse[0]) ? jsonResponse[0] : jsonResponse
+        let shiftCount = 0
         if (options.useFirstRowForHeadings) {
-            tosend = this.shiftArray(tosend, 1)
+            shiftCount++
         }
+        shiftCount = options.shift || shiftCount //Override
         tosend = this.shiftArray(tosend, options.shift)
         return tosend;
     }
