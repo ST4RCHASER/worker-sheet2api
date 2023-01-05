@@ -26,8 +26,8 @@ export class Tabletojson {
     static shiftArray(theArray: any[], times: number) {
         // roll over when longer than length
         times = times % theArray.length;
-        var newArray = theArray.slice(times);
-        newArray = newArray.concat(theArray.slice(0, times));
+        let newArray = theArray.slice(times);
+        // newArray = newArray.concat(theArray.slice(0, times));
         return newArray;
     }
     static findRowWithNotEmpty($: cheerio.CheerioAPI, TRChildrens: cheerio.Cheerio<cheerio.Element>, offset = 0): number {
